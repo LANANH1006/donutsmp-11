@@ -17,12 +17,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Tu tim thu muc chua build.gradle (ke ca khi ban up nguyen thu muc "donutlike/" len GitHub)
+      # Tu tim build.gradle. Neu repo chi co file .zip (up tu dien thoai) thi tu giai nen.
       - name: Find project directory
         id: proj
         run: |
-          f=$(find . -maxdepth 3 -name build.gradle -not -path './.git/*' | head -n 1)
-          if [ -z "$f" ]; then echo "Khong tim thay build.gradle"; exit 1; fi
+          find_gradle() { find . -maxdepth 4 -name build.gradle -not -path './.git/*' | head -n 1; }
+          f=$(find_gradle)
+          if [ -z "$f" ]; then
+            for z in $(find . -maxdepth 2 -iname '*.zip' -not -path './.git/*'); do
+              echo "Giai nen $z"
+              mkdir -p _src && unzip -oq "$z" -d _src
+            done
+            f=$(find_gradle)
+          fi
+          if [ -z "$f" ]; then
+            echo "Khong tim thay build.gradle. Hay up source (hoac file .zip source) len repo."
+            exit 1
+          fi
           d=$(dirname "$f")
           echo "dir=$d" >> "$GITHUB_OUTPUT"
           echo "Project dir: $d"
